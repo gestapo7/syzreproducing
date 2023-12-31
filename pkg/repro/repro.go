@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -341,6 +342,7 @@ func (ctx *context) extractProgSingle(entries []*prog.LogEntry, duration time.Du
 				Opts:     opts,
 			}
 			ctx.reproLogf(3, "single: successfully extracted reproducer")
+			ctx.saveProg(ent)
 			return res, nil
 		}
 	}
@@ -373,6 +375,7 @@ func (ctx *context) extractProgBisect(entries []*prog.LogEntry, baseDuration tim
 
 	ctx.reproLogf(3, "bisect: %d programs left: \n\n%s\n", len(entries), encodeEntries(entries))
 	ctx.reproLogf(3, "bisect: trying to concatenate")
+	ctx.saveEntries(entries)
 
 	// Concatenate all programs into one.
 	prog := &prog.Prog{
@@ -599,7 +602,7 @@ func (ctx *context) testProgs(entries []*prog.LogEntry, duration time.Duration, 
 		program += "]"
 	}
 	ctx.reproLogf(2, "testing program (duration=%v, %+v): %s", duration, opts, program)
-	ctx.reproLogf(3, "detailed listing:\n%s", pstr)
+	ctx.reproLogf(4, "detailed listing:\n%s", pstr)
 	return ctx.testWithInstance(func(exec execInterface) (*instance.RunResult, error) {
 		return exec.RunSyzProg(pstr, duration, opts)
 	})
@@ -690,6 +693,28 @@ func (ctx *context) createInstances(cfg *mgrconfig.Config, vmPool *vm.Pool) {
 	close(ctx.instances)
 	for inst := range ctx.instances {
 		inst.execProg.Close()
+	}
+}
+
+func (ctx *context) saveProg(prog *prog.LogEntry) {
+	ctx.reproLogf(3, "save interesting prog")
+	f, err := os.Create(fmt.Sprintf("prog"))
+	data := prog.P.Serialize()
+	if err == nil {
+		f.Write(data)
+		f.Close()
+	}
+}
+
+func (ctx *context) saveEntries(entries []*prog.LogEntry) {
+	ctx.reproLogf(3, "save interesting %v progs", len(entries))
+	for i, ent := range entries {
+		f, err := os.Create(fmt.Sprintf("prog%v", i))
+		data := ent.P.Serialize()
+		if err == nil {
+			f.Write(data)
+			f.Close()
+		}
 	}
 }
 
