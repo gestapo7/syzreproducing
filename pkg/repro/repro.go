@@ -8,7 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -697,23 +699,35 @@ func (ctx *context) createInstances(cfg *mgrconfig.Config, vmPool *vm.Pool) {
 }
 
 func (ctx *context) saveProg(prog *prog.LogEntry) {
-	ctx.reproLogf(3, "save interesting prog")
-	f, err := os.Create(fmt.Sprintf("prog"))
-	data := prog.P.Serialize()
-	if err == nil {
-		f.Write(data)
-		f.Close()
+	folder := strconv.FormatInt(time.Now().Unix(), 10)
+	err := os.Mkdir(folder, 0755)
+	if err != nil {
+		ctx.reproLogf(1, "create interesting prog folder failed")
+	} else {
+		ctx.reproLogf(3, "save interesting prog")
+		f, err := os.Create(filepath.Join(folder, fmt.Sprintf("prog")))
+		data := prog.P.Serialize()
+		if err == nil {
+			f.Write(data)
+			f.Close()
+		}
 	}
 }
 
 func (ctx *context) saveEntries(entries []*prog.LogEntry) {
 	ctx.reproLogf(3, "save interesting %v progs", len(entries))
-	for i, ent := range entries {
-		f, err := os.Create(fmt.Sprintf("prog%v", i))
-		data := ent.P.Serialize()
-		if err == nil {
-			f.Write(data)
-			f.Close()
+	folder := strconv.FormatInt(time.Now().Unix(), 10)
+	err := os.Mkdir(folder, 0755)
+	if err != nil {
+		ctx.reproLogf(1, "create interesting prog folder failed")
+	} else {
+		for i, ent := range entries {
+			f, err := os.Create(filepath.Join(folder, fmt.Sprintf("prog%v", i)))
+			data := ent.P.Serialize()
+			if err == nil {
+				f.Write(data)
+				f.Close()
+			}
 		}
 	}
 }
