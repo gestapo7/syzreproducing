@@ -221,12 +221,13 @@ func createStartOptions(cfg *mgrconfig.Config, features *host.Features,
 
 func (ctx *context) repro() (*Result, error) {
 	// Cut programs that were executed after crash.
-	for i, ent := range ctx.entries {
-		if ent.Start > ctx.crashStart {
-			ctx.entries = ctx.entries[:i]
-			break
-		}
-	}
+	// FIXME: May cause errors
+	// for i, ent := range ctx.entries {
+	// 	if ent.Start > ctx.crashStart {
+	// 		ctx.entries = ctx.entries[:i]
+	// 		break
+	// 	}
+	// }
 
 	reproStart := time.Now()
 	defer func() {
@@ -308,6 +309,16 @@ func (ctx *context) extractProg(entries []*prog.LogEntry) (*Result, error) {
 			return res, nil
 		}
 
+		// why not run all the entries to ensure ?
+		// if not crash, do we still need to bisect prog?
+		res, err = ctx.extractProgAll(entries, timeout)
+		if err != nil {
+			return nil, err
+		}
+		if res == nil {
+			continue
+		}
+
 		// Don't try bisecting if there's only one entry.
 		if len(entries) == 1 {
 			continue
@@ -325,6 +336,27 @@ func (ctx *context) extractProg(entries []*prog.LogEntry) (*Result, error) {
 	}
 
 	ctx.reproLogf(0, "failed to extract reproducer")
+	return nil, nil
+}
+
+func (ctx *context) extractProgAll(entries []*prog.LogEntry, baseDuration time.Duration) (*Result, error) {
+	ctx.reproLogf(3, "all: executing %d programs with timeout %s", len(entries), baseDuration)
+	opts := ctx.startOpts
+	duration := func(entries int) time.Duration {
+		return baseDuration + time.Duration(entries/4)*time.Second
+	}
+
+	crashed, err := ctx.testProgs(entries, duration(len(entries)), opts)
+	if crashed {
+		dur := duration(len(entries)) * 3 / 2
+		res := &Result{
+			Prog:     nil, // not only one prog
+			Duration: dur,
+			Opts:     opts,
+		}
+		ctx.reproLogf(3, "executing %d all entries really cause crash.", len(entries))
+		return res, err
+	}
 	return nil, nil
 }
 
@@ -553,6 +585,21 @@ func (ctx *context) testWithInstance(callback func(execInterface) (rep *instance
 	if rep == nil {
 		return false, nil
 	}
+	// add ctx.crashTitle compare to rep.Title and rep.AltTitles
+	// we may want to reproduce bugA but crash with bugB
+	if ctx.crashTitle != rep.Title {
+		var bias = true
+		for i := range rep.AltTitles {
+			if ctx.crashTitle == rep.AltTitles[i] {
+				bias = false
+				break
+			}
+		}
+		if bias {
+			return false, nil
+		}
+	}
+
 	if rep.Suppressed {
 		ctx.reproLogf(2, "suppressed program crash: %v", rep.Title)
 		return false, nil
