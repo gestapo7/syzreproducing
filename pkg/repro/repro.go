@@ -746,7 +746,7 @@ func (ctx *context) createInstances(cfg *mgrconfig.Config, vmPool *vm.Pool) {
 }
 
 func (ctx *context) saveProg(prog *prog.LogEntry) {
-	folder := strconv.FormatInt(time.Now().Unix(), 10)
+	folder := fmt.Sprintf("prog-%v", strconv.FormatInt(time.Now().Unix(), 10))
 	err := os.Mkdir(folder, 0755)
 	if err != nil {
 		ctx.reproLogf(1, "create interesting prog folder failed")
@@ -763,7 +763,7 @@ func (ctx *context) saveProg(prog *prog.LogEntry) {
 
 func (ctx *context) saveEntries(entries []*prog.LogEntry) {
 	ctx.reproLogf(3, "save interesting %v progs", len(entries))
-	folder := strconv.FormatInt(time.Now().Unix(), 10)
+	folder := fmt.Sprintf("prog-%v", strconv.FormatInt(time.Now().Unix(), 10))
 	err := os.Mkdir(folder, 0755)
 	if err != nil {
 		ctx.reproLogf(1, "create interesting prog folder failed")
