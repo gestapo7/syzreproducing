@@ -596,7 +596,8 @@ func (ctx *context) testWithInstance(callback func(execInterface) (rep *instance
 			}
 		}
 		if bias {
-			return false, nil
+			ctx.saveAltTitle(ctx.crashTitle)
+			// return false, nil
 		}
 	}
 
@@ -752,7 +753,7 @@ func (ctx *context) saveProg(prog *prog.LogEntry) {
 		ctx.reproLogf(1, "create interesting prog folder failed")
 	} else {
 		ctx.reproLogf(3, "save interesting prog")
-		f, err := os.Create(filepath.Join(folder, fmt.Sprintf("prog")))
+		f, err := os.Create(filepath.Join(folder, "prog"))
 		data := prog.P.Serialize()
 		if err == nil {
 			f.Write(data)
@@ -775,6 +776,21 @@ func (ctx *context) saveEntries(entries []*prog.LogEntry) {
 				f.Write(data)
 				f.Close()
 			}
+		}
+	}
+}
+
+func (ctx *context) saveAltTitle(title string) {
+	ctx.reproLogf(3, "save crash tile %v", title)
+	folder := fmt.Sprintf("repro-%v", strconv.FormatInt(time.Now().Unix(), 10))
+	err := os.Mkdir(folder, 0755)
+	if err != nil {
+		ctx.reproLogf(1, "create altTitle reproduce folder failed")
+	} else {
+		f, err := os.Create(filepath.Join(folder, "description"))
+		if err == nil {
+			f.Write([]byte(title))
+			f.Close()
 		}
 	}
 }
