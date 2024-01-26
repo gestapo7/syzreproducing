@@ -5,7 +5,7 @@
 ```
 
 ## TODO
-* 不同title的bug最好保存在不同的crash文件夹中
+* ~~不同title的bug最好保存在不同的crash文件夹中~~
 
 ## Disclaimer
 
