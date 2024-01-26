@@ -596,8 +596,7 @@ func (ctx *context) testWithInstance(callback func(execInterface) (rep *instance
 			}
 		}
 		if bias {
-			ctx.saveAltTitle(ctx.crashTitle)
-			// return false, nil
+			ctx.saveAltTitle(rep.Title)
 		}
 	}
 
