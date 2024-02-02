@@ -563,7 +563,7 @@ func (ctx *context) testProg(p *prog.Prog, duration time.Duration, opts csource.
 }
 
 func (ctx *context) testWithInstance(callback func(execInterface) (rep *instance.RunResult,
-	err error)) (bool, error) {
+	err error), program string) (bool, error) {
 	var result *instance.RunResult
 	var err error
 
@@ -585,8 +585,9 @@ func (ctx *context) testWithInstance(callback func(execInterface) (rep *instance
 	if rep == nil {
 		return false, nil
 	}
+
 	// add ctx.crashTitle compare to rep.Title and rep.AltTitles
-	// we may want to reproduce bugA but crash with bugB
+	// Sometimes, we may want to reproduce bugA but crash with bugB
 	if ctx.crashTitle != rep.Title {
 		var bias = true
 		for i := range rep.AltTitles {
@@ -596,7 +597,9 @@ func (ctx *context) testWithInstance(callback func(execInterface) (rep *instance
 			}
 		}
 		if bias {
-			ctx.saveAltTitle(rep.Title)
+			// FIXME: Need to store the intermediate progs for clarifying
+			// When reproducing ext4 bugs, title always changed
+			ctx.saveInter(rep.Title, program)
 		}
 	}
 
@@ -651,16 +654,17 @@ func (ctx *context) testProgs(entries []*prog.LogEntry, duration time.Duration, 
 		program += "]"
 	}
 	ctx.reproLogf(2, "testing program (duration=%v, %+v): %s", duration, opts, program)
+	// NOTE: lower the priority of detailed listing, it's not necessary
 	ctx.reproLogf(4, "detailed listing:\n%s", pstr)
 	return ctx.testWithInstance(func(exec execInterface) (*instance.RunResult, error) {
 		return exec.RunSyzProg(pstr, duration, opts)
-	})
+	}, program)
 }
 
 func (ctx *context) testCProg(p *prog.Prog, duration time.Duration, opts csource.Options) (crashed bool, err error) {
 	return ctx.testWithInstance(func(exec execInterface) (*instance.RunResult, error) {
 		return exec.RunCProg(p, duration, opts)
-	})
+	}, p.String())
 }
 
 func (ctx *context) returnInstance(inst *reproInstance) {
@@ -779,8 +783,8 @@ func (ctx *context) saveEntries(entries []*prog.LogEntry) {
 	}
 }
 
-func (ctx *context) saveAltTitle(title string) {
-	ctx.reproLogf(3, "save crash tile %v", title)
+func (ctx *context) saveInter(title string, pstr string) {
+	ctx.reproLogf(3, "save crash title %v", title)
 	folder := fmt.Sprintf("repro-%v", strconv.FormatInt(time.Now().Unix(), 10))
 	err := os.Mkdir(folder, 0755)
 	if err != nil {
@@ -789,6 +793,11 @@ func (ctx *context) saveAltTitle(title string) {
 		f, err := os.Create(filepath.Join(folder, "description"))
 		if err == nil {
 			f.Write([]byte(title))
+			f.Close()
+		}
+		f, err = os.Create(filepath.Join(folder, "prog"))
+		if err == nil {
+			f.Write([]byte(pstr))
 			f.Close()
 		}
 	}
