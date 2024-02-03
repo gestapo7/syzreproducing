@@ -658,7 +658,7 @@ func (ctx *context) testProgs(entries []*prog.LogEntry, duration time.Duration, 
 	ctx.reproLogf(4, "detailed listing:\n%s", pstr)
 	return ctx.testWithInstance(func(exec execInterface) (*instance.RunResult, error) {
 		return exec.RunSyzProg(pstr, duration, opts)
-	}, program)
+	}, string(pstr[:]))
 }
 
 func (ctx *context) testCProg(p *prog.Prog, duration time.Duration, opts csource.Options) (crashed bool, err error) {
