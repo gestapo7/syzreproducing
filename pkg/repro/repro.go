@@ -598,7 +598,11 @@ func (ctx *context) testWithInstance(callback func(execInterface) (rep *instance
 		}
 		if bias {
 			// FIXME: Need to store the intermediate progs for clarifying
-			// When reproducing ext4 bugs, title always changed
+			// When reproducing ext4 bugs, crash title always changed
+			ctx.reproLogf(2, "bias: crash as title: %v", rep.Title)
+			ctx.saveInter(rep.Title, program)
+		} else {
+			ctx.reproLogf(2, "normal: crash as tilte: %v", rep.Title)
 			ctx.saveInter(rep.Title, program)
 		}
 	}
