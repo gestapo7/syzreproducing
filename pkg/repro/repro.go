@@ -817,6 +817,7 @@ func (ctx *context) saveInter(title string, pstr string) {
 			f.Write([]byte(pstr))
 			f.Close()
 		}
+		ctx.reproLogf(2, "saved at %v", folder)
 	}
 }
 
