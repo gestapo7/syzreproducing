@@ -377,6 +377,7 @@ func (ctx *context) extractProgSingle(entries []*prog.LogEntry, duration time.Du
 				Opts:     opts,
 			}
 			ctx.reproLogf(3, "single: successfully extracted reproducer")
+			// no matter what the title is, save the prog anyway.
 			ctx.saveProg(ent)
 			return res, nil
 		}
@@ -671,7 +672,7 @@ func (ctx *context) testProgs(entries []*prog.LogEntry, duration time.Duration, 
 func (ctx *context) testCProg(p *prog.Prog, duration time.Duration, opts csource.Options) (crashed bool, err error) {
 	return ctx.testWithInstance(func(exec execInterface) (*instance.RunResult, error) {
 		return exec.RunCProg(p, duration, opts)
-	}, p.String())
+	}, string(p.Serialize()))
 }
 
 func (ctx *context) returnInstance(inst *reproInstance) {

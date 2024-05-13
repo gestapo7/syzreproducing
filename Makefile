@@ -71,11 +71,13 @@ else
 endif
 GITREVDATE=$(shell git log -n 1 --format="%cd" --date=format:%Y%m%d-%H%M%S)
 
+CFLAGS := -g -Og
 # Don't generate symbol table and DWARF debug info.
 # Reduces build time and binary sizes considerably.
 # That's only needed if you use gdb or nm.
 # If you need that, build manually without these flags.
-GOFLAGS := "-ldflags=-s -w -X github.com/google/syzkaller/prog.GitRevision=$(REV) -X 'github.com/google/syzkaller/prog.gitRevisionDate=$(GITREVDATE)'"
+GOFLAGS := "-ldflags= -X github.com/google/syzkaller/prog.GitRevision=$(REV) -X 'github.com/google/syzkaller/prog.gitRevisionDate=$(GITREVDATE)'"
+GOFLAGS += -gcflags=all="-N -l"
 
 GOHOSTFLAGS ?= $(GOFLAGS)
 GOTARGETFLAGS ?= $(GOFLAGS)
